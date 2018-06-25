@@ -1,0 +1,115 @@
+<template>
+  <div>
+    <h1>{{$t("button.sendSgst")}} </h1>
+    <b-table :fields="fields" :items="suggestionList">
+      <template slot="sgst_sectn" slot-scope="data">
+        {{data.item.sgst_sectn}}
+      </template>
+      <template slot="sgst_tit" slot-scope="data">
+      <a href="#" @click="searchCtnt(data.item.sgst_seq)"> {{data.item.sgst_tit}}</a>
+      </template>
+      <template slot="rgdt" slot-scope="data">
+        {{data.item.rgdt}}
+      </template>
+      <template slot="sgst_yn" slot-scope="data">
+         {{data.item.sgst_yn}}
+       </template>
+
+    </b-table>
+
+    <b-button type="button" @click="suggestionForm" >{{ $t("button.sendSgst") }}</b-button>
+
+
+    <nav aria-label="Page navigation example" >
+      <ul class="pagination justify-content-center">
+        <li class="page-item">
+          <a class="page-link" href="#" @click="getSuggestionList(1)" aria-label="Previous">
+            <span aria-hidden="true">&laquo;</span>
+            <span class="sr-only">Previous</span>
+          </a>
+        </li>
+        <template v-for="i in pageCnt">
+          <li class="page-item active" v-if="i==1">
+            <a @click="getSuggestionList(i)" v-bind:id="i" class="page-link" href="#">{{ i }}</a>
+          </li>
+          <li class="page-item" v-else>
+            <a @click="getSuggestionList(i)" v-bind:id="i" class="page-link" href="#">{{ i }}</a>
+          </li>
+        </template>
+        <li class="page-item">
+          <a class="page-link" href="#" @click="getSuggestionList(pageCnt.length)"aria-label="Next">
+            <span aria-hidden="true">&raquo;</span>
+            <span class="sr-only">Next</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</template>
+
+
+<script>
+  export default {
+    name: "suggestionList",
+    created() {
+    this.$http.get('/api/v1/suggestion/getSuggestionListByPaging?page=1')
+      .then((response)=>{
+        this.suggestionList = response.data;
+        this.totalRows = response.data[0].total_rows;
+        this.getSuggestionPageCnt();
+      })
+    }
+    ,
+    data() {
+      return {
+        fields: [
+          {key: 'sgst_sectn', label: '구분'},
+          {key: 'sgst_tit', label: '제목'},
+          {key: 'rgdt', label: '등록일'},
+          {key: 'sgst_yn', label: '답변여부'}
+        ],
+        suggestionList: []
+        , pageCnt: []
+        , currentPage: 1
+        , totalRows: 0
+      }
+    }
+    , methods: {
+      /*클릭 후 suggestionView 로 이동 */
+      searchCtnt: function (sgst_seq) {
+        this.$session.set('sgst_seq', sgst_seq);
+        this.$router.push({name: 'suggestionView', params: {sgst_seq: sgst_seq}});
+      }
+      , suggestionForm : function(){
+        this.$router.push({name:'suggestionForm'});
+      }
+      , getSuggestionList : function(page){
+        for ( let index=1; index<=(this.pageCnt).length; index++){
+          if(page!=index){
+            $('#'+index).parents("li").removeClass("active")
+          }
+        }
+        $("#"+page).parents("li").addClass("active")
+        this.currentPage= page;
+        this.$http.get('/api/v1/suggestion/getSuggestionListByPaging?page='+page).then((res)=>{
+          this.getSuggestionPageCnt();
+          this.suggestionList=res.data;
+        })
+      }
+      , getSuggestionPageCnt : function(){
+        this.$http.get('/api/v1/suggestion/getSuggestionMaxPage').then((res)=>{
+          //res.data[0].max_page;
+          this.pageCnt = []
+          for(let i=1;i<=res.data[0].max_page;i++){
+            this.pageCnt.push(i);
+          }
+        })
+      }
+    }
+  }
+</script>
+
+
+<style scoped>
+
+</style>
